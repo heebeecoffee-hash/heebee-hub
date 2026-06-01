@@ -1,4 +1,4 @@
-const CACHE = 'heebee-hub-v1';
+const CACHE = 'heebee-hub-v5';
 const ASSETS = [
   '/',
   '/index.html',
