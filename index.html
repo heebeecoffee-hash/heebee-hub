@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Heebee Hub">
+  <meta name="description" content="Heebee Coffee — Central Systems Engine">
+  <title>Heebee Hub</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@200;300;400;600&family=Space+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:'Nunito Sans',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased;min-height:100vh;background:var(--bg);color:var(--text);transition:background .55s cubic-bezier(.4,0,.2,1),color .55s cubic-bezier(.4,0,.2,1);overflow-x:hidden}
+    body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:var(--noise-op);transition:opacity .55s ease}
+
+    body.light{--bg:#f5f5f7;--bg2:#fff;--surface:rgba(255,255,255,.75);--surface2:rgba(255,255,255,.55);--border:rgba(255,255,255,.9);--border2:rgba(0,0,0,.06);--text:#1d1d1f;--text2:#424245;--text3:#86868b;--shadow:0 4px 24px rgba(0,0,0,.06);--shadow2:0 8px 40px rgba(0,0,0,.10);--btn-bg:#1d1d1f;--btn-fg:#fff;--gold:#b8860b;--gold-bright:#f0c040;--tab-active:#1d1d1f;--tab-afg:#fff;--tab-wrap:rgba(255,255,255,.65);--tab-idle:rgba(0,0,0,0);--tab-ifg:#86868b;--input-bg:rgba(255,255,255,.8);--input-bdr:rgba(0,0,0,.1);--rule:linear-gradient(to right,transparent,#b8860b,transparent);--noise-op:.035;--error:#dc2626;--success:#16a34a}
+    body.dark{--bg:#0a0a0f;--bg2:#111118;--surface:rgba(255,255,255,.06);--surface2:rgba(255,255,255,.04);--border:rgba(255,255,255,.10);--border2:rgba(255,255,255,.06);--text:#f5f5f7;--text2:#d2d2d7;--text3:#86868b;--shadow:0 4px 24px rgba(0,0,0,.3);--shadow2:0 8px 40px rgba(0,0,0,.5);--btn-bg:#f5f5f7;--btn-fg:#0a0a0f;--gold:#f0c040;--gold-bright:#f0c040;--tab-active:#f5f5f7;--tab-afg:#0a0a0f;--tab-wrap:rgba(255,255,255,.06);--tab-idle:transparent;--tab-ifg:#86868b;--input-bg:rgba(255,255,255,.07);--input-bdr:rgba(255,255,255,.12);--rule:linear-gradient(to right,transparent,rgba(147,197,253,.5),transparent);--noise-op:.04;--error:#f87171;--success:#4ade80}
+
+    .bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+    .bg-orb{position:absolute;border-radius:50%;filter:blur(90px);animation:orbDrift ease-in-out infinite alternate;transition:opacity .6s ease,background .6s ease}
+    body.light .orb1{width:500px;height:500px;top:-80px;right:-80px;background:radial-gradient(circle,#e8d5b0,transparent 70%);opacity:.5;animation-duration:14s}
+    body.light .orb2{width:400px;height:400px;bottom:-60px;left:-60px;background:radial-gradient(circle,#d4c4a0,transparent 70%);opacity:.4;animation-duration:18s;animation-delay:5s}
+    body.light .orb3{width:280px;height:280px;top:45%;left:50%;background:radial-gradient(circle,#ede8df,transparent 70%);opacity:.35;animation-duration:22s;animation-delay:10s}
+    body.dark .orb1{width:500px;height:500px;top:-80px;right:-80px;background:radial-gradient(circle,#1a2a4a,transparent 70%);opacity:.7;animation-duration:14s}
+    body.dark .orb2{width:400px;height:400px;bottom:-60px;left:-60px;background:radial-gradient(circle,#0d1a30,transparent 70%);opacity:.6;animation-duration:18s;animation-delay:5s}
+    body.dark .orb3{width:280px;height:280px;top:45%;left:50%;background:radial-gradient(circle,#1c1c30,transparent 70%);opacity:.5;animation-duration:22s;animation-delay:10s}
+    @keyframes orbDrift{0%{transform:translate(0,0)}100%{transform:translate(28px,18px)}}
+
+    .app{position:relative;z-index:10;max-width:640px;margin:0 auto;padding:0 20px 100px}
+
+    /* HEADER */
+    .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:48px 0 24px}
+    .brand-wrap{text-align:center;flex:1;padding:0 12px}
+    .eyebrow{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+    .brand-name{font-family:'Nunito Sans',sans-serif;font-weight:200;font-size:clamp(2rem,7vw,2.8rem);letter-spacing:8px;text-transform:uppercase;color:var(--text);line-height:1}
+    .brand-sub{font-family:'Space Mono',monospace;font-size:.5rem;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-top:5px;transition:color .55s ease}
+    .gold-rule{height:1px;background:var(--rule);margin:0 0 24px;transition:background .55s ease}
+
+    .theme-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:background .3s,transform .2s;flex-shrink:0}
+    .theme-btn:hover{transform:scale(1.08)}
+    .hdr-auth-btn{font-family:'Nunito Sans',sans-serif;font-weight:600;font-size:.7rem;letter-spacing:2px;text-transform:uppercase;padding:10px 18px;border-radius:60px;border:1px solid var(--border2);background:var(--surface);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:var(--text);cursor:pointer;transition:background .2s,transform .2s;flex-shrink:0;white-space:nowrap}
+    .hdr-auth-btn:hover{background:var(--surface2);transform:translateY(-1px)}
+    .hdr-auth-btn.is-logout{color:var(--text3)}
+
+    /* GLASS CARD */
+    .glass-card{background:var(--surface);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);transition:background .5s ease,border-color .5s ease,box-shadow .3s ease}
+    .glass-card:hover{box-shadow:var(--shadow2)}
+
+    /* VIEWS */
+    .view{display:none}
+    .view.active{display:block;animation:panelReveal .5s cubic-bezier(.4,0,.2,1) forwards}
+    @keyframes panelReveal{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+    /* SECTION LABEL */
+    .sec-label{font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;transition:color .55s ease}
+
+    /* LANDING */
+    .hero-card{padding:40px 28px;margin-bottom:14px;text-align:center}
+    .hero-icon{font-size:2.4rem;display:block;margin-bottom:14px}
+    .hero-title{font-weight:200;font-size:clamp(1.4rem,4vw,1.8rem);letter-spacing:2px;color:var(--text);margin-bottom:12px}
+    .hero-desc{font-weight:300;font-size:.875rem;color:var(--text2);line-height:1.8;max-width:400px;margin:0 auto}
+
+    /* TAB SWITCHER */
+    .tab-wrap{display:flex;background:var(--tab-wrap);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:60px;padding:4px;margin-bottom:14px;transition:background .55s ease}
+    .tab-btn{flex:1;font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:3px;text-transform:uppercase;padding:10px 8px;border-radius:60px;border:none;cursor:pointer;background:var(--tab-idle);color:var(--tab-ifg);transition:background .3s,color .3s}
+    .tab-btn.active{background:var(--tab-active);color:var(--tab-afg)}
+    .tab-content{display:none}
+    .tab-content.active{display:block;animation:panelReveal .4s ease forwards}
+
+    /* STORY / TEAM CARDS */
+    .content-card{padding:28px 24px;margin-bottom:12px}
+    .story-text{font-weight:300;font-size:.875rem;color:var(--text2);line-height:1.85;margin-bottom:14px}
+    .story-text:last-child{margin-bottom:0}
+    .story-text strong{font-weight:400;color:var(--text)}
+    .inner-rule{height:1px;background:var(--rule);margin:16px 0;transition:background .55s ease}
+
+    .team-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    .team-member{padding:20px 14px;text-align:center}
+    .member-avatar{width:52px;height:52px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 10px}
+    .member-name{font-weight:400;font-size:.82rem;color:var(--text);margin-bottom:4px}
+    .member-role{font-family:'Space Mono',monospace;font-size:.45rem;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+
+    /* CTA */
+    .cta-btn{display:block;width:100%;font-family:'Nunito Sans',sans-serif;font-weight:600;font-size:.82rem;letter-spacing:2px;text-transform:uppercase;padding:18px 24px;border-radius:16px;border:none;background:var(--btn-bg);color:var(--btn-fg);cursor:pointer;margin-top:14px;transition:background .3s,color .3s,transform .2s,box-shadow .2s}
+    .cta-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
+    .cta-btn:active{transform:translateY(0)}
+    .cta-card{padding:28px 24px;text-align:center;margin-top:4px}
+
+    /* LOGIN */
+    .login-card{padding:40px 28px;max-width:420px;margin:0 auto}
+    .login-title{font-weight:200;font-size:1.6rem;letter-spacing:2px;text-align:center;margin-bottom:6px}
+    .login-sub{font-family:'Space Mono',monospace;font-size:.5rem;letter-spacing:4px;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:28px}
+    .form-group{margin-bottom:14px}
+    .form-label{font-family:'Space Mono',monospace;font-size:.5rem;letter-spacing:3px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:7px}
+    .form-input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid var(--input-bdr);background:var(--input-bg);color:var(--text);font-family:'Nunito Sans',sans-serif;font-size:.875rem;font-weight:400;-webkit-appearance:none;outline:none;transition:border-color .2s,box-shadow .2s}
+    .form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,134,11,.12)}
+    .login-error{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:2px;text-transform:uppercase;color:var(--error);text-align:center;margin-top:10px;min-height:18px}
+    .back-link{display:block;text-align:center;margin-top:18px;font-family:'Space Mono',monospace;font-size:.5rem;letter-spacing:2px;text-transform:uppercase;color:var(--text3);cursor:pointer;background:none;border:none;transition:color .2s}
+    .back-link:hover{color:var(--text)}
+
+    /* SYSTEMS */
+    .welcome-card{padding:22px 24px;margin-bottom:14px;display:flex;align-items:center;gap:16px}
+    .welcome-avatar{width:48px;height:48px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+    .welcome-name{font-weight:400;font-size:1rem;color:var(--text);margin-bottom:3px}
+    .welcome-role{font-family:'Space Mono',monospace;font-size:.48rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);transition:color .55s ease}
+    .systems-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .owner-badge{font-family:'Space Mono',monospace;font-size:.45rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);background:rgba(184,134,11,.1);border:1px solid rgba(184,134,11,.2);padding:5px 10px;border-radius:20px;transition:all .55s ease}
+    body.dark .owner-badge{background:rgba(240,192,64,.08);border-color:rgba(240,192,64,.2)}
+
+    .systems-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(min-width:480px){.systems-grid{grid-template-columns:repeat(3,1fr)}}
+
+    .system-card{padding:24px 14px;text-align:center;cursor:pointer;text-decoration:none;display:block;transition:transform .2s,box-shadow .2s;position:relative}
+    .system-card:hover{transform:translateY(-3px);box-shadow:var(--shadow2)}
+    .system-icon{font-size:1.8rem;margin-bottom:10px;display:block}
+    .system-name{font-weight:400;font-size:.8rem;color:var(--text);margin-bottom:6px;line-height:1.3}
+    .system-open{font-family:'Space Mono',monospace;font-size:.45rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);transition:color .55s ease}
+
+    .del-btn{position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-size:.7rem;cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .2s,color .2s,border-color .2s;line-height:1}
+    .del-btn:hover{background:var(--error);color:#fff;border-color:var(--error)}
+    .owner-mode .del-btn{display:flex}
+
+    .add-card{padding:24px 14px;text-align:center;cursor:pointer;border-style:dashed;transition:background .2s,transform .2s}
+    .add-card:hover{background:var(--surface2);transform:translateY(-2px)}
+    .add-icon-big{font-size:1.5rem;color:var(--text3);margin-bottom:8px;display:block}
+    .add-label{font-family:'Space Mono',monospace;font-size:.48rem;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+
+    .loading-state{grid-column:1/-1;padding:40px;text-align:center;font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:3px;text-transform:uppercase;color:var(--text3)}
+    .empty-state{grid-column:1/-1;padding:40px;text-align:center}
+
+    /* MODAL */
+    .modal-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px}
+    .modal-overlay.open{display:flex;animation:fadeIn .3s ease forwards}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .modal-card{width:100%;max-width:400px;padding:32px 26px;animation:panelReveal .4s cubic-bezier(.4,0,.2,1) forwards}
+    .modal-title{font-weight:200;font-size:1.3rem;letter-spacing:2px;margin-bottom:22px}
+
+    .icon-picker{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}
+    .icon-opt{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);cursor:pointer;transition:border-color .2s,background .2s}
+    .icon-opt.sel{border-color:var(--gold);background:var(--surface)}
+
+    .modal-actions{display:flex;gap:10px;margin-top:22px}
+    .btn-primary{flex:1;font-family:'Nunito Sans',sans-serif;font-weight:600;font-size:.75rem;letter-spacing:2px;text-transform:uppercase;padding:14px;border-radius:12px;border:none;background:var(--btn-bg);color:var(--btn-fg);cursor:pointer;transition:transform .2s,box-shadow .2s}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+    .btn-ghost{flex:1;font-family:'Space Mono',monospace;font-size:.5rem;letter-spacing:2px;text-transform:uppercase;padding:14px;border-radius:12px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:background .2s,color .2s}
+    .btn-ghost:hover{background:var(--surface2);color:var(--text)}
+    .btn-danger{background:#dc2626;color:#fff}
+    .btn-danger:hover{background:#b91c1c}
+
+    .status-strip{font-family:'Space Mono',monospace;font-size:.5rem;letter-spacing:2px;text-transform:uppercase;text-align:center;padding:10px;border-radius:10px;margin-top:10px;display:none}
+    .status-strip.ok{display:block;color:var(--success);background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)}
+    .status-strip.err{display:block;color:var(--error);background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2)}
+
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    ::-webkit-scrollbar{width:3px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--text3);border-radius:2px}
+  </style>
+</head>
+<body class="light">
+
+<div class="bg-layer">
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
+  <div class="bg-orb orb3"></div>
+</div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="hdr-top">
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme">☀</button>
+    <div class="brand-wrap">
+      <div class="eyebrow">Systems Hub</div>
+      <div class="brand-name">HEEBEE</div>
+      <div class="brand-sub">◆ Coffee Collective ◆</div>
+    </div>
+    <button class="hdr-auth-btn" id="headerAuthBtn" onclick="handleHeaderAuth()">Login</button>
+  </div>
+  <div class="gold-rule"></div>
+
+  <!-- ═══ VIEW: LANDING ═══ -->
+  <div class="view active" id="view-landing">
+
+    <div class="glass-card hero-card">
+      <span class="hero-icon">◈</span>
+      <h1 class="hero-title">Where Every Cup Tells a Story</h1>
+      <p class="hero-desc">More than coffee — a philosophy of presence, craft, and community. Heebee was born from a simple belief: that every cup can be extraordinary.</p>
+    </div>
+
+    <div class="tab-wrap">
+      <button class="tab-btn active" onclick="switchTab('story',this)">Story</button>
+      <button class="tab-btn" onclick="switchTab('team',this)">Team</button>
+      <button class="tab-btn" onclick="switchTab('values',this)">Values</button>
+    </div>
+
+    <div class="tab-content active" id="tab-story">
+      <div class="glass-card content-card">
+        <div class="sec-label">◎ Our Beginning</div>
+        <p class="story-text">Heebee Coffee began with a single roaster, two hands, and an obsession with the perfect extraction. What started as a small corner café became a gathering place for those who believe that coffee, when approached with care, can slow the world down.</p>
+        <p class="story-text">Every blend we craft carries the essence of the farms we partner with — their soil, their seasons, their stories. We don't just source coffee; we build relationships across continents, cup by cup.</p>
+        <div class="inner-rule"></div>
+        <div class="sec-label">◎ Our Mission</div>
+        <p class="story-text">To create spaces — physical and digital — where quality is non-negotiable, where every team member is empowered, and where every guest leaves with something more than a drink.</p>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-team">
+      <div class="glass-card content-card">
+        <div class="sec-label">◎ The Collective</div>
+        <div class="team-grid">
+          <div class="glass-card team-member">
+            <div class="member-avatar">◈</div>
+            <div class="member-name">Founder</div>
+            <div class="member-role">Vision &amp; Leadership</div>
+          </div>
+          <div class="glass-card team-member">
+            <div class="member-avatar">◉</div>
+            <div class="member-name">Head Barista</div>
+            <div class="member-role">Coffee Excellence</div>
+          </div>
+          <div class="glass-card team-member">
+            <div class="member-avatar">◇</div>
+            <div class="member-name">Operations</div>
+            <div class="member-role">Systems &amp; Flow</div>
+          </div>
+          <div class="glass-card team-member">
+            <div class="member-avatar">✦</div>
+            <div class="member-name">Creative</div>
+            <div class="member-role">Brand &amp; Experience</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-values">
+      <div class="glass-card content-card">
+        <div class="sec-label">◎ What We Stand For</div>
+        <p class="story-text"><strong>Craft.</strong> Every detail matters — from the roast curve to the pour angle. We pursue mastery without ego.</p>
+        <div class="inner-rule"></div>
+        <p class="story-text"><strong>Presence.</strong> In a distracted world, we create moments of genuine connection. Put the phone down. Taste the cup.</p>
+        <div class="inner-rule"></div>
+        <p class="story-text"><strong>Community.</strong> Our café is yours. Every team member, every guest, every farmer is part of the Heebee story.</p>
+        <div class="inner-rule"></div>
+        <p class="story-text"><strong>Systems.</strong> Beautiful experiences don't happen by accident. Behind every great cup is a great team running great systems.</p>
+      </div>
+    </div>
+
+    <div class="glass-card cta-card">
+      <div class="sec-label" style="margin-bottom:6px">◎ Team Access</div>
+      <p style="font-size:.8rem;color:var(--text3);font-weight:300">Heebee team members can login to access all internal systems and tools.</p>
+      <button class="cta-btn" onclick="showView('login')">Login to Systems Engine</button>
+    </div>
+
+  </div><!-- /landing -->
+
+  <!-- ═══ VIEW: LOGIN ═══ -->
+  <div class="view" id="view-login">
+    <div class="glass-card login-card">
+      <h2 class="login-title">Welcome Back</h2>
+      <div class="login-sub">◆ Team Access ◆</div>
+      <div class="form-group">
+        <label class="form-label" for="loginUser">Username</label>
+        <input class="form-input" type="text" id="loginUser" autocomplete="username" autocapitalize="off" placeholder="your username">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginPass">Password</label>
+        <input class="form-input" type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="cta-btn" id="loginBtn" onclick="doLogin()">
+        <span id="loginBtnText">Login</span>
+      </button>
+      <button class="back-link" onclick="showView('landing')">← Back to Home</button>
+    </div>
+  </div>
+
+  <!-- ═══ VIEW: SYSTEMS ═══ -->
+  <div class="view" id="view-systems">
+
+    <div class="glass-card welcome-card">
+      <div class="welcome-avatar" id="welcomeAvatar">◈</div>
+      <div>
+        <div class="welcome-name" id="welcomeName">Welcome</div>
+        <div class="welcome-role" id="welcomeRole">◆ Team Member ◆</div>
+      </div>
+    </div>
+
+    <div class="systems-hdr">
+      <div class="sec-label" style="margin-bottom:0">◎ Systems Engine</div>
+      <div id="ownerBadge" style="display:none"><span class="owner-badge">Owner Mode</span></div>
+    </div>
+
+    <div class="systems-grid" id="systemsGrid">
+      <div class="loading-state">Loading systems…</div>
+    </div>
+
+  </div>
+
+</div><!-- /app -->
+
+<!-- ═══ MODAL: ADD SYSTEM ═══ -->
+<div class="modal-overlay" id="modalAdd">
+  <div class="glass-card modal-card">
+    <h3 class="modal-title">Add System</h3>
+    <div class="form-group">
+      <label class="form-label" for="sysName">System Name</label>
+      <input class="form-input" type="text" id="sysName" placeholder="e.g. Shift Checklist">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="sysUrl">URL</label>
+      <input class="form-input" type="url" id="sysUrl" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <div class="icon-picker" id="iconPicker"></div>
+    </div>
+    <div class="status-strip" id="addStatus"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('modalAdd')">Cancel</button>
+      <button class="btn-primary" onclick="doAddSystem()"><span id="addBtnText">Add System</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CONFIRM DELETE ═══ -->
+<div class="modal-overlay" id="modalDel">
+  <div class="glass-card modal-card">
+    <h3 class="modal-title">Remove System</h3>
+    <p style="font-size:.875rem;color:var(--text2);font-weight:300;margin-bottom:6px">Remove <strong id="delSysName"></strong>?</p>
+    <p style="font-family:'Space Mono',monospace;font-size:.48rem;letter-spacing:2px;text-transform:uppercase;color:var(--text3)">This cannot be undone.</p>
+    <div class="modal-actions" style="margin-top:22px">
+      <button class="btn-ghost" onclick="closeModal('modalDel')">Cancel</button>
+      <button class="btn-primary btn-danger" id="confirmDelBtn" onclick="doDeleteSystem()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ─────────────────────────────────────────────────────
+// Paste your Google Apps Script Web App URL below after setup
+const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+
+// ─── CONSTANTS ──────────────────────────────────────────────────
+const SESSION_KEY = 'hb_hub_session';
+const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours
+const ICONS = ['◈','◉','◇','✦','✧','◎','⬡','▣','◐','◑','◒','◓','◌','◍','○','◊','⊕','⊗','⊙','⊚','⊛','◆'];
+
+// ─── STATE ──────────────────────────────────────────────────────
+let user = null;
+let systems = [];
+let pickedIcon = '◈';
+let delTargetId = null;
+
+// ─── INIT ───────────────────────────────────────────────────────
+function init() {
+  const theme = localStorage.getItem('hb_theme') || 'light';
+  setTheme(theme);
+  buildIconPicker();
+
+  const sess = getSession();
+  if (sess) {
+    user = sess;
+    afterLogin();
+    return;
+  }
+
+  document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginUser').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+}
+
+// ─── THEME ──────────────────────────────────────────────────────
+function setTheme(t) {
+  document.body.classList.remove('light','dark');
+  document.body.classList.add(t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☽' : '☀';
+}
+function toggleTheme() {
+  const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+  localStorage.setItem('hb_theme', next);
+  setTheme(next);
+}
+
+// ─── VIEWS ──────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => { v.classList.remove('active'); v.style.display = 'none'; });
+  const el = document.getElementById('view-' + name);
+  if (el) { el.style.display = 'block'; el.classList.add('active'); }
+}
+
+// ─── TABS ───────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ─── SESSION ────────────────────────────────────────────────────
+function saveSession(u) { localStorage.setItem(SESSION_KEY, JSON.stringify({...u, exp: Date.now() + SESSION_TTL})); }
+function getSession() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (!d || d.exp < Date.now()) { localStorage.removeItem(SESSION_KEY); return null; }
+    return d;
+  } catch { return null; }
+}
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+// ─── HEADER ─────────────────────────────────────────────────────
+function updateHeader() {
+  const btn = document.getElementById('headerAuthBtn');
+  if (user) { btn.textContent = 'Logout'; btn.classList.add('is-logout'); }
+  else { btn.textContent = 'Login'; btn.classList.remove('is-logout'); }
+}
+function handleHeaderAuth() { user ? doLogout() : showView('login'); }
+function doLogout() { clearSession(); user = null; systems = []; updateHeader(); showView('landing'); }
+
+// ─── LOGIN ──────────────────────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  const btnText = document.getElementById('loginBtnText');
+  const btn = document.getElementById('loginBtn');
+
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Please enter your credentials'; return; }
+
+  btnText.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    await sleep(700);
+    if (username === 'owner' && password === 'heebee2025') {
+      user = { username, name: 'Owner', role: 'owner' };
+    } else if (username === 'demo' && password === 'demo') {
+      user = { username, name: 'Team Member', role: 'employee' };
+    } else {
+      errEl.textContent = 'Invalid credentials';
+      btnText.textContent = 'Login';
+      btn.disabled = false;
+      return;
+    }
+    saveSession(user);
+    loadDemoSystems();
+    afterLogin();
+    btnText.textContent = 'Login';
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    const res = await gfetch(`${SCRIPT_URL}?action=login&u=${enc(username)}&p=${enc(password)}`);
+    if (res.success) {
+      user = { username, name: res.name, role: res.role };
+      saveSession(user);
+      await loadSystems();
+      afterLogin();
+    } else {
+      errEl.textContent = 'Invalid username or password';
+    }
+  } catch(e) {
+    errEl.textContent = 'Connection error. Try again.';
+    console.error(e);
+  }
+
+  btnText.textContent = 'Login';
+  btn.disabled = false;
+}
+
+function afterLogin() {
+  updateHeader();
+  showView('systems');
+  const isOwner = user.role === 'owner';
+  document.getElementById('welcomeName').textContent = `Hello, ${user.name}`;
+  document.getElementById('welcomeRole').textContent = isOwner ? '◆ Owner ◆' : '◆ Team Member ◆';
+  document.getElementById('welcomeAvatar').textContent = isOwner ? '◆' : '◈';
+  document.getElementById('ownerBadge').style.display = isOwner ? 'block' : 'none';
+  if (systems.length === 0 && SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') loadDemoSystems();
+  else renderSystems();
+  document.getElementById('loginUser').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+  document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+}
+
+// ─── SYSTEMS ────────────────────────────────────────────────────
+function loadDemoSystems() {
+  systems = [
+    { id:'1', name:'HAOS', url:'#', icon:'◈' },
+    { id:'2', name:'Review Hub', url:'#', icon:'◉' },
+    { id:'3', name:'Shift Checklist', url:'#', icon:'✦' },
+  ];
+  renderSystems();
+}
+
+async function loadSystems() {
+  try {
+    const res = await gfetch(`${SCRIPT_URL}?action=getSystems&u=${enc(user.username)}`);
+    if (res.success) systems = res.systems || [];
+  } catch(e) { console.error(e); }
+  renderSystems();
+}
+
+function renderSystems() {
+  const grid = document.getElementById('systemsGrid');
+  const isOwner = user?.role === 'owner';
+  let html = '';
+
+  if (systems.length === 0 && !isOwner) {
+    html = `<div class="empty-state"><div class="sec-label">No systems yet</div><p style="font-size:.8rem;color:var(--text3);margin-top:8px;font-weight:300">Ask an owner to add systems to the engine.</p></div>`;
+  } else {
+    systems.forEach(s => {
+      html += `
+        <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="glass-card system-card">
+          ${isOwner ? `<button class="del-btn" onclick="askDelete(event,'${esc(s.id)}','${esc(s.name)}')">✕</button>` : ''}
+          <span class="system-icon">${esc(s.icon||'◈')}</span>
+          <div class="system-name">${esc(s.name)}</div>
+          <div class="system-open">Open ↗</div>
+        </a>`;
+    });
+    if (isOwner) {
+      html += `<div class="glass-card add-card" onclick="openAddModal()"><span class="add-icon-big">+</span><div class="add-label">Add System</div></div>`;
+    }
+  }
+
+  grid.innerHTML = html;
+  if (isOwner) grid.classList.add('owner-mode'); else grid.classList.remove('owner-mode');
+}
+
+// ─── ADD SYSTEM ─────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('sysName').value = '';
+  document.getElementById('sysUrl').value = '';
+  const s = document.getElementById('addStatus');
+  s.className = 'status-strip'; s.textContent = '';
+  document.getElementById('addBtnText').textContent = 'Add System';
+  document.getElementById('modalAdd').classList.add('open');
+}
+
+async function doAddSystem() {
+  const name = document.getElementById('sysName').value.trim();
+  const url = document.getElementById('sysUrl').value.trim();
+  const statusEl = document.getElementById('addStatus');
+  const btnText = document.getElementById('addBtnText');
+
+  statusEl.className = 'status-strip'; statusEl.textContent = '';
+
+  if (!name || !url) { statusEl.className = 'status-strip err'; statusEl.textContent = 'Name and URL are required'; return; }
+  if (!url.startsWith('http')) { statusEl.className = 'status-strip err'; statusEl.textContent = 'URL must start with https://'; return; }
+
+  btnText.innerHTML = '<span class="spinner"></span>';
+
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    await sleep(500);
+    systems.push({ id: Date.now().toString(), name, url, icon: pickedIcon });
+    renderSystems();
+    closeModal('modalAdd');
+    btnText.textContent = 'Add System';
+    return;
+  }
+
+  try {
+    const res = await gfetch(`${SCRIPT_URL}?action=addSystem&u=${enc(user.username)}&name=${enc(name)}&url=${enc(url)}&icon=${enc(pickedIcon)}`);
+    if (res.success) {
+      systems.push({ id: res.id, name, url, icon: pickedIcon });
+      renderSystems();
+      closeModal('modalAdd');
+    } else {
+      statusEl.className = 'status-strip err'; statusEl.textContent = res.error || 'Failed to add';
+    }
+  } catch(e) {
+    statusEl.className = 'status-strip err'; statusEl.textContent = 'Connection error';
+  }
+
+  btnText.textContent = 'Add System';
+}
+
+// ─── DELETE SYSTEM ──────────────────────────────────────────────
+function askDelete(e, id, name) {
+  e.preventDefault(); e.stopPropagation();
+  delTargetId = id;
+  document.getElementById('delSysName').textContent = name;
+  document.getElementById('modalDel').classList.add('open');
+}
+
+async function doDeleteSystem() {
+  if (!delTargetId) return;
+  const btn = document.getElementById('confirmDelBtn');
+  btn.textContent = '…'; btn.disabled = true;
+
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    await sleep(400);
+    systems = systems.filter(s => s.id !== delTargetId);
+    renderSystems(); closeModal('modalDel');
+    btn.textContent = 'Remove'; btn.disabled = false;
+    return;
+  }
+
+  try {
+    const res = await gfetch(`${SCRIPT_URL}?action=deleteSystem&u=${enc(user.username)}&id=${enc(delTargetId)}`);
+    if (res.success) { systems = systems.filter(s => s.id !== delTargetId); renderSystems(); closeModal('modalDel'); }
+  } catch(e) { console.error(e); }
+
+  btn.textContent = 'Remove'; btn.disabled = false;
+}
+
+// ─── MODAL ──────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.getElementById('modalAdd').addEventListener('click', function(e){ if(e.target===this) closeModal('modalAdd'); });
+document.getElementById('modalDel').addEventListener('click', function(e){ if(e.target===this) closeModal('modalDel'); });
+
+// ─── ICON PICKER ────────────────────────────────────────────────
+function buildIconPicker() {
+  document.getElementById('iconPicker').innerHTML = ICONS.map(ic =>
+    `<div class="icon-opt${ic===pickedIcon?' sel':''}" onclick="pickIcon('${ic}',this)">${ic}</div>`
+  ).join('');
+}
+function pickIcon(ic, el) {
+  pickedIcon = ic;
+  document.querySelectorAll('.icon-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ─── UTILS ──────────────────────────────────────────────────────
+async function gfetch(url) {
+  const r = await fetch(url, { redirect: 'follow' });
+  return JSON.parse(await r.text());
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function enc(s) { return encodeURIComponent(s || ''); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+init();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
