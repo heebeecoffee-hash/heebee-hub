@@ -601,9 +601,9 @@ async function doAddSystem() {
   btnText.innerHTML = '<span class="spinner"></span>';
   try {
     const newSys = { id: Date.now().toString(), name, url, icon: pickedIcon, added_by: user.username, created_at: new Date().toISOString() };
-    const data = await readData();
+    const { data, sha } = await readDataFresh(token);
     data.systems = [...(data.systems || []), newSys];
-    await writeData(data, token);
+    await writeData(data, token, sha);
     systems = data.systems;
     renderSystems();
     closeModal('modalAdd');
@@ -633,9 +633,9 @@ async function doDeleteSystem() {
   if (!token) { closeModal('modalDel'); btn.textContent = 'Remove'; btn.disabled = false; return; }
 
   try {
-    const data = await readData();
+    const { data, sha } = await readDataFresh(token);
     data.systems = (data.systems || []).filter(s => s.id !== delTargetId);
-    await writeData(data, token);
+    await writeData(data, token, sha);
     systems = data.systems;
     renderSystems();
     closeModal('modalDel');
@@ -708,14 +708,14 @@ async function doAddEmployee() {
 
   btnText.innerHTML = '<span class="spinner"></span>';
   try {
-    const data = await readData();
+    const { data, sha } = await readDataFresh(token);
     if ((data.users || []).find(u => u.username === username)) {
       statusEl.className = 'status-strip err'; statusEl.textContent = 'Username already exists';
       btnText.textContent = 'Add Employee'; return;
     }
     const passwordHash = await sha256(password);
     data.users = [...(data.users || []), { username, passwordHash, role, name }];
-    await writeData(data, token);
+    await writeData(data, token, sha);
     statusEl.className = 'status-strip ok'; statusEl.textContent = 'Employee added!';
     setTimeout(() => { closeModal('modalEmployee'); renderEmployees(); }, 800);
   } catch(e) {
@@ -731,9 +731,9 @@ async function deleteEmployee(e, username, name) {
   const token = getToken();
   if (!token) { alert('Set GitHub token first (⚙ icon)'); return; }
   try {
-    const data = await readData();
+    const { data, sha } = await readDataFresh(token);
     data.users = (data.users || []).filter(u => u.username !== username);
-    await writeData(data, token);
+    await writeData(data, token, sha);
     renderEmployees();
   } catch(err) { alert('Failed: ' + err.message); }
 }
@@ -785,14 +785,24 @@ async function readData() {
   return r.json();
 }
 
-async function writeData(data, token) {
-  // Get current file SHA
+async function readDataFresh(token) {
   const meta = await fetch(API_URL, {
     headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
   });
   if (!meta.ok) throw new Error(meta.status + ' auth failed');
-  const { sha } = await meta.json();
+  const { content, sha } = await meta.json();
+  const decoded = decodeURIComponent(escape(atob(content.replace(/\n/g, ''))));
+  return { data: JSON.parse(decoded), sha };
+}
 
+async function writeData(data, token, sha) {
+  if (!sha) {
+    const meta = await fetch(API_URL, {
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!meta.ok) throw new Error(meta.status + ' auth failed');
+    sha = (await meta.json()).sha;
+  }
   const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
   const res = await fetch(API_URL, {
     method: 'PUT',
