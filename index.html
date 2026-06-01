@@ -125,6 +125,28 @@
     .del-btn{position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-size:.7rem;cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .2s,color .2s,border-color .2s;line-height:1}
     .del-btn:hover{background:var(--error);color:#fff;border-color:var(--error)}
     .owner-mode .del-btn{display:flex}
+    .edit-btn{position:absolute;top:9px;left:9px;width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-size:.8rem;cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .2s,color .2s,border-color .2s;line-height:1}
+    .edit-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+    .owner-mode .edit-btn{display:flex}
+
+    /* Employee list */
+    .emp-list{display:flex;flex-direction:column;gap:10px}
+    .emp-row{display:flex;align-items:center;gap:12px;padding:14px 16px}
+    .emp-row.emp-disabled .emp-icon-sm{opacity:.35}
+    .emp-row.emp-disabled .emp-name-sm{color:var(--text3)}
+    .emp-icon-sm{font-size:1.1rem;flex-shrink:0;width:30px;text-align:center}
+    .emp-info{flex:1;min-width:0}
+    .emp-name-sm{font-weight:400;font-size:.875rem;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .emp-meta{font-family:'Space Mono',monospace;font-size:.42rem;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+    .emp-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+    .toggle-pill{font-family:'Space Mono',monospace;font-size:.4rem;letter-spacing:2px;text-transform:uppercase;padding:5px 8px;border-radius:20px;border:1px solid;cursor:pointer;transition:all .2s;line-height:1;white-space:nowrap}
+    .toggle-pill.on{background:rgba(34,197,94,.12);color:#16a34a;border-color:rgba(34,197,94,.3)}
+    .toggle-pill.off{background:rgba(239,68,68,.08);color:#dc2626;border-color:rgba(239,68,68,.25)}
+    body.dark .toggle-pill.on{color:#4ade80;background:rgba(34,197,94,.15)}
+    body.dark .toggle-pill.off{color:#f87171;background:rgba(239,68,68,.12)}
+    .icon-action{width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,border-color .2s;line-height:1}
+    .icon-action:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+    .icon-action.danger:hover{background:var(--error);color:#fff;border-color:var(--error)}
 
     .add-card{padding:24px 14px;text-align:center;cursor:pointer;border-style:dashed;transition:background .2s,transform .2s}
     .add-card:hover{background:var(--surface2);transform:translateY(-2px)}
@@ -409,6 +431,54 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: EDIT SYSTEM ═══ -->
+<div class="modal-overlay" id="modalEditSystem">
+  <div class="glass-card modal-card">
+    <h3 class="modal-title">Edit System</h3>
+    <div class="form-group">
+      <label class="form-label" for="editSysName">System Name</label>
+      <input class="form-input" type="text" id="editSysName" placeholder="e.g. Shift Checklist">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="editSysUrl">URL</label>
+      <input class="form-input" type="url" id="editSysUrl" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <div class="icon-picker" id="editIconPicker"></div>
+    </div>
+    <div class="status-strip" id="editSysStatus"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('modalEditSystem')">Cancel</button>
+      <button class="btn-primary" onclick="doEditSystem()"><span id="editSysBtnText">Save Changes</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: EDIT EMPLOYEE ═══ -->
+<div class="modal-overlay" id="modalEditEmployee">
+  <div class="glass-card modal-card">
+    <h3 class="modal-title">Edit Employee</h3>
+    <div class="form-group">
+      <label class="form-label" for="editEmpName">Full Name</label>
+      <input class="form-input" type="text" id="editEmpName" placeholder="e.g. Javed">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="editEmpUser">Username</label>
+      <input class="form-input" type="text" id="editEmpUser" placeholder="e.g. javed" autocapitalize="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="editEmpPass">New Password <span style="color:var(--text3);font-weight:300">(leave blank to keep current)</span></label>
+      <input class="form-input" type="password" id="editEmpPass" placeholder="leave blank to keep current">
+    </div>
+    <div class="status-strip" id="editEmpStatus"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('modalEditEmployee')">Cancel</button>
+      <button class="btn-primary" onclick="doEditEmployee()"><span id="editEmpBtnText">Save Changes</span></button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── CONFIG ─────────────────────────────────────────────────────
 const GH_OWNER = 'heebeecoffee-hash';
@@ -511,7 +581,9 @@ async function doLogin() {
     const hash = await sha256(password);
     const data = await readData();
     const found = (data.users || []).find(u => u.username === username && u.passwordHash === hash);
-    if (found) {
+    if (found && found.disabled) {
+      errEl.textContent = 'Your account has been disabled. Contact the owner.';
+    } else if (found) {
       user = { username, name: found.name, role: found.role };
       systems = data.systems || [];
       saveSession(user);
@@ -560,7 +632,7 @@ function renderSystems() {
     systems.forEach(s => {
       html += `
         <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="glass-card system-card">
-          ${isOwner ? `<button class="del-btn" onclick="askDelete(event,'${esc(s.id)}','${esc(s.name)}')">✕</button>` : ''}
+          ${isOwner ? `<button class="del-btn" onclick="askDelete(event,'${esc(s.id)}','${esc(s.name)}')">✕</button><button class="edit-btn" onclick="openEditSystemModal(event,'${esc(s.id)}')">✎</button>` : ''}
           <span class="system-icon">${esc(s.icon||'◈')}</span>
           <div class="system-name">${esc(s.name)}</div>
           <div class="system-open">Open ↗</div>
@@ -647,10 +719,9 @@ async function doDeleteSystem() {
 // ─── MODAL ──────────────────────────────────────────────────────
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-document.getElementById('modalAdd').addEventListener('click', function(e){ if(e.target===this) closeModal('modalAdd'); });
-document.getElementById('modalDel').addEventListener('click', function(e){ if(e.target===this) closeModal('modalDel'); });
-document.getElementById('modalToken').addEventListener('click', function(e){ if(e.target===this) closeModal('modalToken'); });
-document.getElementById('modalEmployee').addEventListener('click', function(e){ if(e.target===this) closeModal('modalEmployee'); });
+['modalAdd','modalDel','modalToken','modalEmployee','modalEditSystem','modalEditEmployee'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+});
 
 // ─── OWNER TABS ─────────────────────────────────────────────────
 function switchOwnerTab(name, btn) {
@@ -663,23 +734,30 @@ function switchOwnerTab(name, btn) {
 
 // ─── EMPLOYEES ───────────────────────────────────────────────────
 async function renderEmployees() {
-  const grid = document.getElementById('employeesGrid');
-  grid.innerHTML = '<div class="loading-state">Loading…</div>';
+  const wrap = document.getElementById('employeesGrid');
+  wrap.className = 'emp-list';
+  wrap.innerHTML = '<div class="loading-state" style="padding:30px 0">Loading…</div>';
   const data = await readData();
   const users = (data.users || []).filter(u => u.username !== user.username);
   let html = '';
   users.forEach(u => {
+    const isOn = !u.disabled;
     html += `
-      <div class="glass-card system-card">
-        <button class="del-btn" style="display:flex;" onclick="deleteEmployee(event,'${esc(u.username)}','${esc(u.name)}')">✕</button>
-        <span class="system-icon">${u.role === 'owner' ? '◆' : '◈'}</span>
-        <div class="system-name">${esc(u.name)}</div>
-        <div class="system-open" style="text-transform:none;letter-spacing:0;font-family:'Nunito Sans',sans-serif;font-size:.75rem;">${esc(u.username)}</div>
-        <div class="system-open">${esc(u.role)}</div>
+      <div class="glass-card emp-row${u.disabled ? ' emp-disabled' : ''}">
+        <span class="emp-icon-sm">${u.role === 'owner' ? '◆' : '◈'}</span>
+        <div class="emp-info">
+          <div class="emp-name-sm">${esc(u.name)}</div>
+          <div class="emp-meta">${esc(u.username)} · ${esc(u.role)}</div>
+        </div>
+        <div class="emp-actions">
+          <button class="toggle-pill ${isOn ? 'on' : 'off'}" onclick="toggleEmployee('${esc(u.username)}')">${isOn ? 'Active' : 'Disabled'}</button>
+          <button class="icon-action" onclick="openEditEmployeeModal('${esc(u.username)}')">✎</button>
+          <button class="icon-action danger" onclick="deleteEmployee(event,'${esc(u.username)}','${esc(u.name)}')">✕</button>
+        </div>
       </div>`;
   });
   html += `<div class="glass-card add-card" onclick="openAddEmployeeModal()"><span class="add-icon-big">+</span><div class="add-label">Add Employee</div></div>`;
-  grid.innerHTML = html;
+  wrap.innerHTML = html;
 }
 
 function openAddEmployeeModal() {
@@ -736,6 +814,129 @@ async function deleteEmployee(e, username, name) {
     await writeData(data, token, sha);
     renderEmployees();
   } catch(err) { alert('Failed: ' + err.message); }
+}
+
+// ─── TOGGLE EMPLOYEE ────────────────────────────────────────────
+async function toggleEmployee(username) {
+  const token = getToken();
+  if (!token) { alert('Set GitHub token first (⚙ icon)'); return; }
+  try {
+    const { data, sha } = await readDataFresh(token);
+    const u = (data.users || []).find(x => x.username === username);
+    if (u) u.disabled = !u.disabled;
+    await writeData(data, token, sha);
+    renderEmployees();
+  } catch(err) { alert('Failed: ' + err.message); }
+}
+
+// ─── EDIT SYSTEM ────────────────────────────────────────────────
+let editSysId = null;
+function openEditSystemModal(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  editSysId = id;
+  const s = systems.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('editSysName').value = s.name;
+  document.getElementById('editSysUrl').value = s.url;
+  pickedEditIcon = s.icon || '◈';
+  renderEditIconPicker();
+  const st = document.getElementById('editSysStatus');
+  st.className = 'status-strip'; st.textContent = '';
+  document.getElementById('editSysBtnText').textContent = 'Save Changes';
+  document.getElementById('modalEditSystem').classList.add('open');
+}
+
+let pickedEditIcon = '◈';
+function renderEditIconPicker() {
+  const picker = document.getElementById('editIconPicker');
+  picker.innerHTML = ICONS.map(ic =>
+    `<button class="icon-opt${ic===pickedEditIcon?' sel':''}" onclick="pickEditIcon('${ic}')">${ic}</button>`
+  ).join('');
+}
+function pickEditIcon(ic) { pickedEditIcon = ic; renderEditIconPicker(); }
+
+async function doEditSystem() {
+  const name = document.getElementById('editSysName').value.trim();
+  const url  = document.getElementById('editSysUrl').value.trim();
+  const statusEl = document.getElementById('editSysStatus');
+  const btnText  = document.getElementById('editSysBtnText');
+  statusEl.className = 'status-strip'; statusEl.textContent = '';
+  if (!name || !url) { statusEl.className = 'status-strip err'; statusEl.textContent = 'Name and URL are required'; return; }
+  if (!url.startsWith('http')) { statusEl.className = 'status-strip err'; statusEl.textContent = 'URL must start with https://'; return; }
+  const token = getToken();
+  if (!token) { statusEl.className = 'status-strip err'; statusEl.textContent = 'GitHub token required'; return; }
+  btnText.innerHTML = '<span class="spinner"></span>';
+  try {
+    const { data, sha } = await readDataFresh(token);
+    const idx = (data.systems || []).findIndex(x => x.id === editSysId);
+    if (idx !== -1) { data.systems[idx].name = name; data.systems[idx].url = url; data.systems[idx].icon = pickedEditIcon; }
+    await writeData(data, token, sha);
+    systems = data.systems;
+    renderSystems();
+    closeModal('modalEditSystem');
+  } catch(e) {
+    statusEl.className = 'status-strip err';
+    statusEl.textContent = e.message.includes('401') ? 'Invalid token — tap ⚙ to update' : 'Error: ' + e.message;
+  }
+  btnText.textContent = 'Save Changes';
+}
+
+// ─── EDIT EMPLOYEE ──────────────────────────────────────────────
+let editEmpUsername = null;
+function openEditEmployeeModal(username) {
+  editEmpUsername = username;
+  // read from local rendered state — username is passed in
+  document.getElementById('editEmpName').value = '';
+  document.getElementById('editEmpUser').value = username;
+  document.getElementById('editEmpPass').value = '';
+  // populate name from DOM (or re-read from data)
+  readData().then(data => {
+    const u = (data.users || []).find(x => x.username === username);
+    if (u) {
+      document.getElementById('editEmpName').value = u.name;
+      document.getElementById('editEmpUser').value = u.username;
+    }
+  });
+  const st = document.getElementById('editEmpStatus');
+  st.className = 'status-strip'; st.textContent = '';
+  document.getElementById('editEmpBtnText').textContent = 'Save Changes';
+  document.getElementById('modalEditEmployee').classList.add('open');
+}
+
+async function doEditEmployee() {
+  const name     = document.getElementById('editEmpName').value.trim();
+  const newUser  = document.getElementById('editEmpUser').value.trim().toLowerCase();
+  const newPass  = document.getElementById('editEmpPass').value;
+  const statusEl = document.getElementById('editEmpStatus');
+  const btnText  = document.getElementById('editEmpBtnText');
+  statusEl.className = 'status-strip'; statusEl.textContent = '';
+  if (!name || !newUser) { statusEl.className = 'status-strip err'; statusEl.textContent = 'Name and username are required'; return; }
+  const token = getToken();
+  if (!token) { statusEl.className = 'status-strip err'; statusEl.textContent = 'Set GitHub token first (⚙ icon)'; return; }
+  btnText.innerHTML = '<span class="spinner"></span>';
+  try {
+    const { data, sha } = await readDataFresh(token);
+    const idx = (data.users || []).findIndex(x => x.username === editEmpUsername);
+    if (idx === -1) throw new Error('User not found');
+    if (newUser !== editEmpUsername && (data.users || []).find(u => u.username === newUser)) {
+      statusEl.className = 'status-strip err'; statusEl.textContent = 'Username already taken';
+      btnText.textContent = 'Save Changes'; return;
+    }
+    data.users[idx].name = name;
+    data.users[idx].username = newUser;
+    if (newPass.length >= 4) data.users[idx].passwordHash = await sha256(newPass);
+    else if (newPass.length > 0 && newPass.length < 4) {
+      statusEl.className = 'status-strip err'; statusEl.textContent = 'Password must be at least 4 characters';
+      btnText.textContent = 'Save Changes'; return;
+    }
+    await writeData(data, token, sha);
+    statusEl.className = 'status-strip ok'; statusEl.textContent = 'Saved!';
+    setTimeout(() => { closeModal('modalEditEmployee'); renderEmployees(); }, 700);
+  } catch(e) {
+    statusEl.className = 'status-strip err';
+    statusEl.textContent = e.message.includes('401') ? 'Invalid token — tap ⚙ to update' : 'Error: ' + e.message;
+  }
+  btnText.textContent = 'Save Changes';
 }
 
 // ─── TOKEN SETTINGS ─────────────────────────────────────────────
