@@ -383,7 +383,7 @@
 <div class="modal-overlay" id="modalToken">
   <div class="glass-card modal-card">
     <h3 class="modal-title">GitHub Token</h3>
-    <p style="font-size:.8rem;color:var(--text3);font-weight:300;margin-bottom:20px;line-height:1.6">Required for saving systems. Create a token at <strong style="color:var(--text)">github.com → Settings → Developer settings → Personal access tokens → Fine-grained</strong> with <strong style="color:var(--text)">Contents: Read & Write</strong> on this repo.</p>
+    <p style="font-size:.8rem;color:var(--text3);font-weight:300;margin-bottom:20px;line-height:1.6">Go to <strong style="color:var(--text)">github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</strong> → Generate new token (classic) → tick the <strong style="color:var(--text)">repo</strong> checkbox → Generate → copy and paste below.</p>
     <div class="form-group">
       <label class="form-label" for="tokenInput">Personal Access Token</label>
       <input class="form-input" type="password" id="tokenInput" placeholder="github_pat_...">
@@ -609,7 +609,9 @@ async function doAddSystem() {
     closeModal('modalAdd');
   } catch(e) {
     statusEl.className = 'status-strip err';
-    statusEl.textContent = e.message.includes('401') ? 'Invalid token — check Settings' : 'Save failed. Try again.';
+    statusEl.textContent = e.message.includes('401') ? 'Invalid token — tap ⚙ to update' :
+                           e.message.includes('403') ? 'Token has no write permission — create a Classic token with repo scope' :
+                           'Error: ' + e.message;
   }
   btnText.textContent = 'Add System';
 }
