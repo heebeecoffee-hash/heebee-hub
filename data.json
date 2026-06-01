@@ -1,0 +1,11 @@
+{
+  "users": [
+    {
+      "username": "owner",
+      "passwordHash": "d6e9f86d814a7223a2a50c9f5669d779337f7df75a47cc929737e7c7ecec8166",
+      "role": "owner",
+      "name": "Owner"
+    }
+  ],
+  "systems": []
+}

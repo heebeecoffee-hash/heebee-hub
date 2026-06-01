@@ -296,7 +296,10 @@
 
     <div class="systems-hdr">
       <div class="sec-label" style="margin-bottom:0">◎ Systems Engine</div>
-      <div id="ownerBadge" style="display:none"><span class="owner-badge">Owner Mode</span></div>
+      <div id="ownerBadge" style="display:none;display:flex;align-items:center;gap:8px;">
+        <span class="owner-badge">Owner Mode</span>
+        <button onclick="openTokenModal()" title="GitHub Token Settings" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--text3);padding:4px;line-height:1;">⚙</button>
+      </div>
     </div>
 
     <div class="systems-grid" id="systemsGrid">
@@ -331,6 +334,23 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: GITHUB TOKEN SETTINGS ═══ -->
+<div class="modal-overlay" id="modalToken">
+  <div class="glass-card modal-card">
+    <h3 class="modal-title">GitHub Token</h3>
+    <p style="font-size:.8rem;color:var(--text3);font-weight:300;margin-bottom:20px;line-height:1.6">Required for saving systems. Create a token at <strong style="color:var(--text)">github.com → Settings → Developer settings → Personal access tokens → Fine-grained</strong> with <strong style="color:var(--text)">Contents: Read & Write</strong> on this repo.</p>
+    <div class="form-group">
+      <label class="form-label" for="tokenInput">Personal Access Token</label>
+      <input class="form-input" type="password" id="tokenInput" placeholder="github_pat_...">
+    </div>
+    <div class="status-strip" id="tokenStatus"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('modalToken')">Cancel</button>
+      <button class="btn-primary" onclick="saveTokenFromModal()">Save Token</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: CONFIRM DELETE ═══ -->
 <div class="modal-overlay" id="modalDel">
   <div class="glass-card modal-card">
@@ -346,12 +366,16 @@
 
 <script>
 // ─── CONFIG ─────────────────────────────────────────────────────
-// Paste your Google Apps Script Web App URL below after setup
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmjcRY68sjiDGWRJxMnv9JVxvpfF5XA2eq_q1T8tBQabSdwcKQmaNF0w1AaMp7CteR6A/exec';
+const GH_OWNER = 'heebeecoffee-hash';
+const GH_REPO  = 'heebee-hub';
+const DATA_FILE = 'data.json';
+const RAW_URL  = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/${DATA_FILE}`;
+const API_URL  = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${DATA_FILE}`;
 
 // ─── CONSTANTS ──────────────────────────────────────────────────
 const SESSION_KEY = 'hb_hub_session';
-const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours
+const SESSION_TTL = 8 * 60 * 60 * 1000;
+const TOKEN_KEY   = 'hb_gh_token';
 const ICONS = ['◈','◉','◇','✦','✧','◎','⬡','▣','◐','◑','◒','◓','◌','◍','○','◊','⊕','⊗','⊙','⊚','⊛','◆'];
 
 // ─── STATE ──────────────────────────────────────────────────────
@@ -361,20 +385,20 @@ let pickedIcon = '◈';
 let delTargetId = null;
 
 // ─── INIT ───────────────────────────────────────────────────────
-function init() {
+async function init() {
   const theme = localStorage.getItem('hb_theme') || 'light';
   setTheme(theme);
   buildIconPicker();
 
+  document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginUser').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+
   const sess = getSession();
   if (sess) {
     user = sess;
+    await loadSystems();
     afterLogin();
-    return;
   }
-
-  document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-  document.getElementById('loginUser').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
 }
 
 // ─── THEME ──────────────────────────────────────────────────────
@@ -438,32 +462,14 @@ async function doLogin() {
   btnText.innerHTML = '<span class="spinner"></span>';
   btn.disabled = true;
 
-  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-    await sleep(700);
-    if (username === 'owner' && password === 'heebee2025') {
-      user = { username, name: 'Owner', role: 'owner' };
-    } else if (username === 'demo' && password === 'demo') {
-      user = { username, name: 'Team Member', role: 'employee' };
-    } else {
-      errEl.textContent = 'Invalid credentials';
-      btnText.textContent = 'Login';
-      btn.disabled = false;
-      return;
-    }
-    saveSession(user);
-    loadDemoSystems();
-    afterLogin();
-    btnText.textContent = 'Login';
-    btn.disabled = false;
-    return;
-  }
-
   try {
-    const res = await gfetch(`${SCRIPT_URL}?action=login&u=${enc(username)}&p=${enc(password)}`);
-    if (res.success) {
-      user = { username, name: res.name, role: res.role };
+    const hash = await sha256(password);
+    const data = await readData();
+    const found = (data.users || []).find(u => u.username === username && u.passwordHash === hash);
+    if (found) {
+      user = { username, name: found.name, role: found.role };
+      systems = data.systems || [];
       saveSession(user);
-      await loadSystems();
       afterLogin();
     } else {
       errEl.textContent = 'Invalid username or password';
@@ -485,26 +491,14 @@ function afterLogin() {
   document.getElementById('welcomeRole').textContent = isOwner ? '◆ Owner ◆' : '◆ Team Member ◆';
   document.getElementById('welcomeAvatar').textContent = isOwner ? '◆' : '◈';
   document.getElementById('ownerBadge').style.display = isOwner ? 'block' : 'none';
-  if (systems.length === 0 && SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') loadDemoSystems();
-  else renderSystems();
-  document.getElementById('loginUser').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPass').focus(); });
-  document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-}
-
-// ─── SYSTEMS ────────────────────────────────────────────────────
-function loadDemoSystems() {
-  systems = [
-    { id:'1', name:'HAOS', url:'#', icon:'◈' },
-    { id:'2', name:'Review Hub', url:'#', icon:'◉' },
-    { id:'3', name:'Shift Checklist', url:'#', icon:'✦' },
-  ];
   renderSystems();
 }
 
+// ─── SYSTEMS ────────────────────────────────────────────────────
 async function loadSystems() {
   try {
-    const res = await gfetch(`${SCRIPT_URL}?action=getSystems&u=${enc(user.username)}`);
-    if (res.success) systems = res.systems || [];
+    const data = await readData();
+    systems = data.systems || [];
   } catch(e) { console.error(e); }
   renderSystems();
 }
@@ -552,34 +546,25 @@ async function doAddSystem() {
   const btnText = document.getElementById('addBtnText');
 
   statusEl.className = 'status-strip'; statusEl.textContent = '';
-
   if (!name || !url) { statusEl.className = 'status-strip err'; statusEl.textContent = 'Name and URL are required'; return; }
   if (!url.startsWith('http')) { statusEl.className = 'status-strip err'; statusEl.textContent = 'URL must start with https://'; return; }
 
-  btnText.innerHTML = '<span class="spinner"></span>';
+  const token = getToken();
+  if (!token) { statusEl.className = 'status-strip err'; statusEl.textContent = 'GitHub token required — check Settings'; return; }
 
-  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-    await sleep(500);
-    systems.push({ id: Date.now().toString(), name, url, icon: pickedIcon });
+  btnText.innerHTML = '<span class="spinner"></span>';
+  try {
+    const newSys = { id: Date.now().toString(), name, url, icon: pickedIcon, added_by: user.username, created_at: new Date().toISOString() };
+    const data = await readData();
+    data.systems = [...(data.systems || []), newSys];
+    await writeData(data, token);
+    systems = data.systems;
     renderSystems();
     closeModal('modalAdd');
-    btnText.textContent = 'Add System';
-    return;
-  }
-
-  try {
-    const res = await gfetch(`${SCRIPT_URL}?action=addSystem&u=${enc(user.username)}&name=${enc(name)}&url=${enc(url)}&icon=${enc(pickedIcon)}`);
-    if (res.success) {
-      systems.push({ id: res.id, name, url, icon: pickedIcon });
-      renderSystems();
-      closeModal('modalAdd');
-    } else {
-      statusEl.className = 'status-strip err'; statusEl.textContent = res.error || 'Failed to add';
-    }
   } catch(e) {
-    statusEl.className = 'status-strip err'; statusEl.textContent = 'Connection error';
+    statusEl.className = 'status-strip err';
+    statusEl.textContent = e.message.includes('401') ? 'Invalid token — check Settings' : 'Save failed. Try again.';
   }
-
   btnText.textContent = 'Add System';
 }
 
@@ -596,17 +581,16 @@ async function doDeleteSystem() {
   const btn = document.getElementById('confirmDelBtn');
   btn.textContent = '…'; btn.disabled = true;
 
-  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-    await sleep(400);
-    systems = systems.filter(s => s.id !== delTargetId);
-    renderSystems(); closeModal('modalDel');
-    btn.textContent = 'Remove'; btn.disabled = false;
-    return;
-  }
+  const token = getToken();
+  if (!token) { closeModal('modalDel'); btn.textContent = 'Remove'; btn.disabled = false; return; }
 
   try {
-    const res = await gfetch(`${SCRIPT_URL}?action=deleteSystem&u=${enc(user.username)}&id=${enc(delTargetId)}`);
-    if (res.success) { systems = systems.filter(s => s.id !== delTargetId); renderSystems(); closeModal('modalDel'); }
+    const data = await readData();
+    data.systems = (data.systems || []).filter(s => s.id !== delTargetId);
+    await writeData(data, token);
+    systems = data.systems;
+    renderSystems();
+    closeModal('modalDel');
   } catch(e) { console.error(e); }
 
   btn.textContent = 'Remove'; btn.disabled = false;
@@ -617,6 +601,35 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 document.getElementById('modalAdd').addEventListener('click', function(e){ if(e.target===this) closeModal('modalAdd'); });
 document.getElementById('modalDel').addEventListener('click', function(e){ if(e.target===this) closeModal('modalDel'); });
+document.getElementById('modalToken').addEventListener('click', function(e){ if(e.target===this) closeModal('modalToken'); });
+
+// ─── TOKEN SETTINGS ─────────────────────────────────────────────
+function openTokenModal() {
+  const existing = getToken();
+  document.getElementById('tokenInput').value = existing ? '••••••••••••••••' : '';
+  const s = document.getElementById('tokenStatus');
+  s.className = 'status-strip';
+  s.textContent = existing ? '' : '';
+  if (existing) {
+    s.className = 'status-strip ok';
+    s.textContent = 'Token is set';
+  }
+  document.getElementById('modalToken').classList.add('open');
+}
+
+function saveTokenFromModal() {
+  const val = document.getElementById('tokenInput').value.trim();
+  const s = document.getElementById('tokenStatus');
+  if (!val || val.startsWith('•')) {
+    s.className = 'status-strip err';
+    s.textContent = 'Paste your new token';
+    return;
+  }
+  saveToken(val);
+  s.className = 'status-strip ok';
+  s.textContent = 'Token saved!';
+  setTimeout(() => closeModal('modalToken'), 1000);
+}
 
 // ─── ICON PICKER ────────────────────────────────────────────────
 function buildIconPicker() {
@@ -630,43 +643,48 @@ function pickIcon(ic, el) {
   el.classList.add('sel');
 }
 
-// ─── UTILS ──────────────────────────────────────────────────────
-function gfetch(url) {
-  return new Promise((resolve, reject) => {
-    const rid = 'hb' + Date.now() + Math.random().toString(36).slice(2);
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;opacity:0;pointer-events:none;border:none;';
-
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error('Connection error. Try again.'));
-    }, 25000);
-
-    function handler(e) {
-      try {
-        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (!d || d._rid !== rid) return;
-        cleanup();
-        resolve(d);
-      } catch(_) {}
-    }
-
-    function cleanup() {
-      clearTimeout(timer);
-      window.removeEventListener('message', handler);
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-    }
-
-    window.addEventListener('message', handler);
-    iframe.src = url + '&origin=' + encodeURIComponent(location.origin) + '&rid=' + rid;
-    document.body.appendChild(iframe);
-  });
+// ─── GITHUB DATA API ────────────────────────────────────────────
+async function readData() {
+  const r = await fetch(RAW_URL + '?t=' + Date.now());
+  if (!r.ok) throw new Error('Failed to read data');
+  return r.json();
 }
+
+async function writeData(data, token) {
+  // Get current file SHA
+  const meta = await fetch(API_URL, {
+    headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if (!meta.ok) throw new Error(meta.status + ' auth failed');
+  const { sha } = await meta.json();
+
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const res = await fetch(API_URL, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ message: 'Update via Heebee Hub', content, sha })
+  });
+  if (!res.ok) throw new Error(res.status + ' write failed');
+}
+
+function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+function saveToken(t) { localStorage.setItem(TOKEN_KEY, t.trim()); }
+
+// ─── CRYPTO ─────────────────────────────────────────────────────
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ─── UTILS ──────────────────────────────────────────────────────
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-function enc(s) { return encodeURIComponent(s || ''); }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 init();
