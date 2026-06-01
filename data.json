@@ -1,22 +1,10 @@
 {
   "users": [
     {
-      "username": "owner",
-      "passwordHash": "d6e9f86d814a7223a2a50c9f5669d779337f7df75a47cc929737e7c7ecec8166",
-      "role": "owner",
-      "name": "Owner"
-    },
-    {
       "username": "javed",
       "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
       "role": "employee",
       "name": "javed"
-    },
-    {
-      "username": "abc",
-      "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-      "role": "owner",
-      "name": "abc"
     }
   ],
   "systems": []
