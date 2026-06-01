@@ -1,0 +1,6 @@
+apps-script-setup.js
+index.html
+manifest.json
+sw.js
+icons/**
+.gitignore
