@@ -27,15 +27,15 @@ function doGet(e) {
     const action = e.parameter.action;
     let result;
 
-    if (action === 'login')        result = handleLogin(e.parameter);
+    if (action === 'login')             result = handleLogin(e.parameter);
     else if (action === 'getSystems')   result = handleGetSystems(e.parameter);
     else if (action === 'addSystem')    result = handleAddSystem(e.parameter);
     else if (action === 'deleteSystem') result = handleDeleteSystem(e.parameter);
     else result = { success: false, error: 'Unknown action' };
 
-    return respond(result);
+    return respond(result, e.parameter.callback);
   } catch(err) {
-    return respond({ success: false, error: err.message });
+    return respond({ success: false, error: err.message }, e.parameter.callback);
   }
 }
 
@@ -119,8 +119,14 @@ function getSheet(name) {
   return sheet;
 }
 
-function respond(data) {
+function respond(data, callback) {
+  const json = JSON.stringify(data);
+  if (callback) {
+    return ContentService
+      .createTextOutput(`${callback}(${json})`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService
-    .createTextOutput(JSON.stringify(data))
+    .createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
 }
