@@ -40,6 +40,9 @@
     .eyebrow{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
     .brand-name{font-family:'Nunito Sans',sans-serif;font-weight:200;font-size:clamp(2rem,7vw,2.8rem);letter-spacing:8px;text-transform:uppercase;color:var(--text);line-height:1}
     .brand-sub{font-family:'Space Mono',monospace;font-size:.5rem;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-top:5px;transition:color .55s ease}
+    .hb-logo{width:110px;height:110px;display:block;margin:0 auto;transition:color .55s ease}
+    body.light .hb-logo{color:#1d1d1f}
+    body.dark  .hb-logo{color:#f0c040}
     .gold-rule{height:1px;background:var(--rule);margin:0 0 24px;transition:background .55s ease}
 
     .theme-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:background .3s,transform .2s;flex-shrink:0}
@@ -201,9 +204,35 @@
   <div class="hdr-top">
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme">☀</button>
     <div class="brand-wrap">
-      <div class="eyebrow">Systems Hub</div>
-      <div class="brand-name">HEEBEE</div>
-      <div class="brand-sub">◆ Coffee Collective ◆</div>
+      <svg class="hb-logo" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Heebee Coffee">
+        <!-- Outer ring -->
+        <circle cx="150" cy="150" r="141" stroke="currentColor" stroke-width="4"/>
+        <!-- Inner ring -->
+        <circle cx="150" cy="150" r="130" stroke="currentColor" stroke-width="2"/>
+        <!-- Bee: left wing -->
+        <path d="M138 80 C128 66 112 67 114 78 C116 89 133 90 138 80Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <!-- Bee: right wing -->
+        <path d="M162 80 C172 66 188 67 186 78 C184 89 167 90 162 80Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <!-- Bee: coffee-bean body (filled oval with crease) -->
+        <ellipse cx="150" cy="93" rx="13" ry="19" fill="currentColor" transform="rotate(-8 150 93)"/>
+        <path d="M139 87 Q150 94 161 99" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <!-- Bee: head -->
+        <circle cx="150" cy="69" r="7" fill="currentColor"/>
+        <!-- Bee: antennae -->
+        <path d="M146 63 C142 56 136 52 132 49" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="130" cy="47" r="3.5" fill="currentColor"/>
+        <path d="M154 63 C158 56 164 52 168 49" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="170" cy="47" r="3.5" fill="currentColor"/>
+        <!-- HEEBEE text: HEE light, BEE bold -->
+        <text y="193" text-anchor="middle" fill="currentColor" font-family="'Nunito Sans',sans-serif" font-size="52" letter-spacing="2">
+          <tspan x="150" font-weight="200">HEE</tspan><tspan font-weight="800">BEE</tspan>
+        </text>
+        <!-- Decorative lines flanking COFFEE -->
+        <line x1="75" y1="214" x2="104" y2="214" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="196" y1="214" x2="225" y2="214" stroke="currentColor" stroke-width="1.5"/>
+        <!-- COFFEE text -->
+        <text x="150" y="225" text-anchor="middle" fill="currentColor" font-family="'Nunito Sans',sans-serif" font-weight="300" font-size="17" letter-spacing="9">COFFEE</text>
+      </svg>
     </div>
     <button class="hdr-auth-btn" id="headerAuthBtn" onclick="handleHeaderAuth()">Login</button>
   </div>
