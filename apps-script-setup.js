@@ -33,9 +33,22 @@ function doGet(e) {
     else if (action === 'deleteSystem') result = handleDeleteSystem(e.parameter);
     else result = { success: false, error: 'Unknown action' };
 
-    return respond(result, e.parameter.callback);
+    const json = JSON.stringify(result);
+    const origin = e.parameter.origin || '*';
+
+    const html = `<!DOCTYPE html><html><body><script>
+      (function(){
+        var t = window.parent !== window ? window.parent : window.opener;
+        if(t) t.postMessage(${json}, '${origin}');
+      })();
+    <\/script></body></html>`;
+
+    return HtmlService.createHtmlOutput(html)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } catch(err) {
-    return respond({ success: false, error: err.message }, e.parameter.callback);
+    const html = '<!DOCTYPE html><html><body><script>(function(){var t=window.parent!==window?window.parent:window.opener;if(t)t.postMessage({success:false,error:"' + err.message.replace(/"/g,"'") + '"},"*");})()</\script></body></html>';
+    return HtmlService.createHtmlOutput(html)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 }
 
@@ -119,14 +132,3 @@ function getSheet(name) {
   return sheet;
 }
 
-function respond(data, callback) {
-  const json = JSON.stringify(data);
-  if (callback) {
-    return ContentService
-      .createTextOutput(`${callback}(${json})`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService
-    .createTextOutput(json)
-    .setMimeType(ContentService.MimeType.JSON);
-}
