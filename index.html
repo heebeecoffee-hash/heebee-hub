@@ -633,18 +633,22 @@ function pickIcon(ic, el) {
 // ─── UTILS ──────────────────────────────────────────────────────
 function gfetch(url) {
   return new Promise((resolve, reject) => {
+    const rid = 'hb' + Date.now() + Math.random().toString(36).slice(2);
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;opacity:0;pointer-events:none;';
+    iframe.style.cssText = 'position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;opacity:0;pointer-events:none;border:none;';
 
     const timer = setTimeout(() => {
       cleanup();
-      reject(new Error('Request timeout'));
-    }, 20000);
+      reject(new Error('Connection error. Try again.'));
+    }, 25000);
 
     function handler(e) {
-      if (e.source !== iframe.contentWindow) return;
-      cleanup();
-      resolve(e.data);
+      try {
+        const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (!d || d._rid !== rid) return;
+        cleanup();
+        resolve(d);
+      } catch(_) {}
     }
 
     function cleanup() {
@@ -654,7 +658,7 @@ function gfetch(url) {
     }
 
     window.addEventListener('message', handler);
-    iframe.src = url + '&origin=' + encodeURIComponent(location.origin);
+    iframe.src = url + '&origin=' + encodeURIComponent(location.origin) + '&rid=' + rid;
     document.body.appendChild(iframe);
   });
 }

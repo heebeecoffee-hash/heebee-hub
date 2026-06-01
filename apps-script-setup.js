@@ -33,6 +33,7 @@ function doGet(e) {
     else if (action === 'deleteSystem') result = handleDeleteSystem(e.parameter);
     else result = { success: false, error: 'Unknown action' };
 
+    result._rid = e.parameter.rid || '';
     const json = JSON.stringify(result);
     const origin = e.parameter.origin || '*';
 
