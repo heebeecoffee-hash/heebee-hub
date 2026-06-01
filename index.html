@@ -579,7 +579,7 @@ async function doLogin() {
 
   try {
     const hash = await sha256(password);
-    const data = await readData();
+    const data = await readDataNoCache();
     const found = (data.users || []).find(u => u.username === username && u.passwordHash === hash);
     if (found && found.disabled) {
       errEl.textContent = 'Your account has been disabled. Contact the owner.';
@@ -984,6 +984,15 @@ async function readData() {
   const r = await fetch(RAW_URL + '?t=' + Date.now());
   if (!r.ok) throw new Error('Failed to read data');
   return r.json();
+}
+
+async function readDataNoCache() {
+  // GitHub Contents API — always returns the real current file, no CDN cache
+  const r = await fetch(API_URL, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
+  if (!r.ok) throw new Error('Failed to read data');
+  const { content } = await r.json();
+  const decoded = decodeURIComponent(escape(atob(content.replace(/\n/g, ''))));
+  return JSON.parse(decoded);
 }
 
 async function readDataFresh(token) {
