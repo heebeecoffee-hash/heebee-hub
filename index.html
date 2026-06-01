@@ -296,14 +296,28 @@
 
     <div class="systems-hdr">
       <div class="sec-label" style="margin-bottom:0">◎ Systems Engine</div>
-      <div id="ownerBadge" style="display:none;display:flex;align-items:center;gap:8px;">
+      <div id="ownerBadge" style="display:none;align-items:center;gap:8px;">
         <span class="owner-badge">Owner Mode</span>
         <button onclick="openTokenModal()" title="GitHub Token Settings" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--text3);padding:4px;line-height:1;">⚙</button>
       </div>
     </div>
 
-    <div class="systems-grid" id="systemsGrid">
-      <div class="loading-state">Loading systems…</div>
+    <!-- Owner tabs -->
+    <div class="tab-wrap" id="ownerTabs" style="display:none;">
+      <button class="tab-btn active" onclick="switchOwnerTab('systems',this)">Systems</button>
+      <button class="tab-btn" onclick="switchOwnerTab('employees',this)">Employees</button>
+    </div>
+
+    <div id="ownerTabSystems">
+      <div class="systems-grid" id="systemsGrid">
+        <div class="loading-state">Loading systems…</div>
+      </div>
+    </div>
+
+    <div id="ownerTabEmployees" style="display:none;">
+      <div class="systems-grid" id="employeesGrid">
+        <div class="loading-state">Loading…</div>
+      </div>
     </div>
 
   </div>
@@ -330,6 +344,37 @@
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeModal('modalAdd')">Cancel</button>
       <button class="btn-primary" onclick="doAddSystem()"><span id="addBtnText">Add System</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: ADD EMPLOYEE ═══ -->
+<div class="modal-overlay" id="modalEmployee">
+  <div class="glass-card modal-card">
+    <h3 class="modal-title">Add Employee</h3>
+    <div class="form-group">
+      <label class="form-label" for="empName">Full Name</label>
+      <input class="form-input" type="text" id="empName" placeholder="e.g. Javed">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="empUser">Username</label>
+      <input class="form-input" type="text" id="empUser" placeholder="e.g. javed" autocapitalize="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="empPass">Password</label>
+      <input class="form-input" type="password" id="empPass" placeholder="choose a password">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="empRole">Role</label>
+      <select class="form-input" id="empRole" style="-webkit-appearance:none;">
+        <option value="employee">Employee</option>
+        <option value="owner">Owner</option>
+      </select>
+    </div>
+    <div class="status-strip" id="empStatus"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('modalEmployee')">Cancel</button>
+      <button class="btn-primary" onclick="doAddEmployee()"><span id="empBtnText">Add Employee</span></button>
     </div>
   </div>
 </div>
@@ -490,7 +535,8 @@ function afterLogin() {
   document.getElementById('welcomeName').textContent = `Hello, ${user.name}`;
   document.getElementById('welcomeRole').textContent = isOwner ? '◆ Owner ◆' : '◆ Team Member ◆';
   document.getElementById('welcomeAvatar').textContent = isOwner ? '◆' : '◈';
-  document.getElementById('ownerBadge').style.display = isOwner ? 'block' : 'none';
+  document.getElementById('ownerBadge').style.display = isOwner ? 'flex' : 'none';
+  document.getElementById('ownerTabs').style.display = isOwner ? 'flex' : 'none';
   renderSystems();
 }
 
@@ -602,6 +648,93 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 document.getElementById('modalAdd').addEventListener('click', function(e){ if(e.target===this) closeModal('modalAdd'); });
 document.getElementById('modalDel').addEventListener('click', function(e){ if(e.target===this) closeModal('modalDel'); });
 document.getElementById('modalToken').addEventListener('click', function(e){ if(e.target===this) closeModal('modalToken'); });
+document.getElementById('modalEmployee').addEventListener('click', function(e){ if(e.target===this) closeModal('modalEmployee'); });
+
+// ─── OWNER TABS ─────────────────────────────────────────────────
+function switchOwnerTab(name, btn) {
+  document.querySelectorAll('#ownerTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ownerTabSystems').style.display = name === 'systems' ? 'block' : 'none';
+  document.getElementById('ownerTabEmployees').style.display = name === 'employees' ? 'block' : 'none';
+  if (name === 'employees') renderEmployees();
+}
+
+// ─── EMPLOYEES ───────────────────────────────────────────────────
+async function renderEmployees() {
+  const grid = document.getElementById('employeesGrid');
+  grid.innerHTML = '<div class="loading-state">Loading…</div>';
+  const data = await readData();
+  const users = (data.users || []).filter(u => u.username !== user.username);
+  let html = '';
+  users.forEach(u => {
+    html += `
+      <div class="glass-card system-card">
+        <button class="del-btn" style="display:flex;" onclick="deleteEmployee(event,'${esc(u.username)}','${esc(u.name)}')">✕</button>
+        <span class="system-icon">${u.role === 'owner' ? '◆' : '◈'}</span>
+        <div class="system-name">${esc(u.name)}</div>
+        <div class="system-open" style="text-transform:none;letter-spacing:0;font-family:'Nunito Sans',sans-serif;font-size:.75rem;">${esc(u.username)}</div>
+        <div class="system-open">${esc(u.role)}</div>
+      </div>`;
+  });
+  html += `<div class="glass-card add-card" onclick="openAddEmployeeModal()"><span class="add-icon-big">+</span><div class="add-label">Add Employee</div></div>`;
+  grid.innerHTML = html;
+}
+
+function openAddEmployeeModal() {
+  ['empName','empUser','empPass'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('empRole').value = 'employee';
+  const s = document.getElementById('empStatus');
+  s.className = 'status-strip'; s.textContent = '';
+  document.getElementById('empBtnText').textContent = 'Add Employee';
+  document.getElementById('modalEmployee').classList.add('open');
+}
+
+async function doAddEmployee() {
+  const name = document.getElementById('empName').value.trim();
+  const username = document.getElementById('empUser').value.trim().toLowerCase();
+  const password = document.getElementById('empPass').value;
+  const role = document.getElementById('empRole').value;
+  const statusEl = document.getElementById('empStatus');
+  const btnText = document.getElementById('empBtnText');
+
+  statusEl.className = 'status-strip'; statusEl.textContent = '';
+  if (!name || !username || !password) { statusEl.className = 'status-strip err'; statusEl.textContent = 'All fields are required'; return; }
+  if (password.length < 4) { statusEl.className = 'status-strip err'; statusEl.textContent = 'Password must be at least 4 characters'; return; }
+
+  const token = getToken();
+  if (!token) { statusEl.className = 'status-strip err'; statusEl.textContent = 'Set GitHub token first (⚙ icon)'; return; }
+
+  btnText.innerHTML = '<span class="spinner"></span>';
+  try {
+    const data = await readData();
+    if ((data.users || []).find(u => u.username === username)) {
+      statusEl.className = 'status-strip err'; statusEl.textContent = 'Username already exists';
+      btnText.textContent = 'Add Employee'; return;
+    }
+    const passwordHash = await sha256(password);
+    data.users = [...(data.users || []), { username, passwordHash, role, name }];
+    await writeData(data, token);
+    statusEl.className = 'status-strip ok'; statusEl.textContent = 'Employee added!';
+    setTimeout(() => { closeModal('modalEmployee'); renderEmployees(); }, 800);
+  } catch(e) {
+    statusEl.className = 'status-strip err';
+    statusEl.textContent = e.message.includes('401') ? 'Invalid token — tap ⚙ to update' : 'Failed. Try again.';
+  }
+  btnText.textContent = 'Add Employee';
+}
+
+async function deleteEmployee(e, username, name) {
+  e.preventDefault(); e.stopPropagation();
+  if (!confirm(`Remove ${name} from the team?`)) return;
+  const token = getToken();
+  if (!token) { alert('Set GitHub token first (⚙ icon)'); return; }
+  try {
+    const data = await readData();
+    data.users = (data.users || []).filter(u => u.username !== username);
+    await writeData(data, token);
+    renderEmployees();
+  } catch(err) { alert('Failed: ' + err.message); }
+}
 
 // ─── TOKEN SETTINGS ─────────────────────────────────────────────
 function openTokenModal() {
