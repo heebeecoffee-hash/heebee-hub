@@ -2,7 +2,7 @@
   "name": "Heebee Hub",
   "short_name": "Heebee Hub",
   "description": "Heebee Coffee — Central Systems Engine",
-  "start_url": "/heebee-hub/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#1d1d1f",
   "theme_color": "#1d1d1f",
